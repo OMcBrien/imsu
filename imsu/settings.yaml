@@ -1,0 +1,66 @@
+Program Settings:
+    Query Database: False
+    Generate Transients: True
+    Generate Lightcurves: True
+    Perform Recovery: True
+    Make Plots: True
+
+Query Settings:
+    dbevent: Fermi_583567803
+    query file: test_query_grb
+
+Survey Settings:
+    sky visible:
+        min ra: 300.
+        max ra: 315.
+        min dec: -12.
+        max dec: 8.
+    time observing:
+        survey begin: 2458659.0
+        survey end: 2458671.0
+    depth:
+        min redshift: 0.000 
+        max redshift: 0.025 
+       
+Lightcurve Settings:
+    population:
+        transient type: GRB
+        number to inject: 50
+        population file: test_population
+    filters:
+        - gotoL
+        - gotoR
+        - gotoG
+        - gotoB
+    lightcurve file: test_lcs
+
+GRB Settings:
+    jetType: 'Gaussian'         # TopHat, Gaussian or PowerLaw
+    specType: 0                 # Basic Synchrotron Spectrum
+    thetaObs: 0.40              # Viewing angle in radians
+    E0: 1.0e53              # Isotropic-equivalent energy in erg
+    thetaCore: 0.066            # Half-opening angle in radians
+    n0: 0.001995262314968879    # circumburst density in cm^{-3}
+    p: 2.168                    # electron energy distribution index
+    epsilon_e: 0.038018939632   # epsilon_e
+    epsilon_B: 1.0e-4           # epsilon_B
+    xi_N: 1.0                   # Fraction of electrons accelerated
+#    d_L: 1.0e28                 # Luminosity distance in cm
+#    z: 0.009727                 # redshift
+    thetaWing: 0.47             # Wing angle in radians, I presume
+#    b: 6                        # Power law slope
+
+Recovery Settings:
+    min detection counts:
+        gotoL: 1
+        gotoR: 0
+        gotoB: 0 
+        gotoG: 0
+    min nightly detection counts:
+        gotoL: 0
+        gotoR: 0
+        gotoB: 0 
+        gotoG: 0
+    
+ 
+ 
