@@ -35,6 +35,68 @@ def registerBandpasses():
 	sncosmo.register(G_band)
 	sncosmo.register(B_band)
 
+def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, redshift = 0.00984, min_wl = 3400., max_wl = 22300., npoints = 40000):
+
+	import spectres
+
+	path_to_spectra = 'custom_sources/%s/source_spectra/' %obj_name
+
+	df = pd.read_csv(path_to_spectra + '%s_metadata.csv' %obj_name)
+
+	new_wl = np.linspace(min_wl, max_wl, npoints)
+
+	fluxes = [np.zeros_like(new_wl)]
+	obj_phase = [0.0]
+
+
+	for index, row in df.iterrows():
+	
+		try:
+			spectrum = np.loadtxt(path_to_spectra + row['Ascii file'])
+		except:
+			print(row['Ascii file'])
+		
+		wl = spectrum[:,0]
+		flux = spectrum[:,1]
+	
+		new_flux = spectres.spectres(new_wl, wl, flux, spec_errs=None, fill=None, verbose=True)
+	
+		obj_phase.append(row['JD'] - explosion_epoch)
+	
+		fluxes.append(new_flux)
+	
+		plt.plot(new_wl, new_flux, label = '%.3f' %(row['JD'] - explosion_epoch))
+
+	plt.legend()
+	plt.show()
+
+	fluxes = np.array(fluxes, dtype = float)
+	obj_phase = np.array(obj_phase, dtype = float)
+
+	source = sncosmo.TimeSeriesSource(phase = obj_phase, wave = new_wl, flux = fluxes, name = 'kilonova_2017gfo')
+
+# 	print(source)
+# 
+# 	model = sncosmo.Model(source)
+# 	model.update({'z': redshift, 't0': obj_phase[0]})
+# 	
+# 	# model.set_source_peakabsmag(-15.6, 'desr', 'ab')
+# 
+# 	tobs = np.linspace(0., 15., 50)
+# 	# mags = model.bandmag('desr', 'ab', tobs)
+# 	mags = model.bandmag('desr', 'ab', tobs)
+# 	# mags = model.flux(5, [4000., 4100., 4200.])
+# 
+# 	print(tobs, mags)
+# 
+# 	plt.plot(tobs, mags)
+# 	plt.gca().invert_yaxis()
+# 
+# 	plt.show()
+	
+	return source
+
+
 def collectTemporalOverlap(query_output, explosion_epoch, duration):
 
 	partial_query_output = query_output.query('jd > {} & jd < {}'.format(explosion_epoch, explosion_epoch + duration))
@@ -108,7 +170,7 @@ def collectFootprintOverlapLoop(query_output, ra_trans, dec_trans):
 	
 	return None
 
-def generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings):
+def generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, source):
 
 	tlc0 = time.time()
 
@@ -118,7 +180,8 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 				  'SN Ib/c': 'nugent-sn1bc',
 				  'SN II-P': 'nugent-sn2p',
 				  'SN II-L': 'nugent-sn2l',
-				  'SN IIn': 'nugent-sn2n'}
+				  'SN IIn': 'nugent-sn2n',
+				  'Kilonova': 'kilonova_2017gfo'}
 					
 	if not transient_type in the_source.keys():
 		
@@ -133,21 +196,26 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 					'SN Ib/c': 95.,
 					'SN II-P': 120.,
 					'SN II-L': 140.,
-					'SN IIn': 130.}
+					'SN IIn': 130.,
+					'Kilonova': 10.}
 					
 	the_peak = {'SN Ia': -19.,
 				'SN Ib/c': -18.,
 				'SN II-P': -17.5,
 				'SN II-L': -17.,
-				'SN IIn': -17.5}
+				'SN IIn': -17.5,
+				'Kilonova': -16.}
 
 	dust = sncosmo.CCM89Dust()
 	dustmap = sfdmap.SFDMap('sfdmaps/sfddata-master')
+	
+	if source:
 
-	model = sncosmo.Model(source = the_source[transient_type], effects = [dust, dust], effect_names = ['host', 'mw'], effect_frames = ['rest', 'obs'])
-
-
-# 	print(population_settings)
+		model = sncosmo.Model(source = source, effects = [dust, dust], effect_names = ['host', 'mw'], effect_frames = ['rest', 'obs'])
+	
+	else:
+	
+		model = sncosmo.Model(source = the_source[transient_type], effects = [dust, dust], effect_names = ['host', 'mw'], effect_frames = ['rest', 'obs'])
 	
 	main_lc_dict = {}
 
@@ -225,6 +293,7 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 				   
 	c = 3.e18
 	seconds_in_day = 8.64e4
+	step_sizen = 25
 	
 	goto_nueffs = {'gotoL': c / 5396.65,
 				   'gotoR': c / 6405.05,
@@ -254,7 +323,6 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 		grb_settings['z'] = z
 		grb_settings['d_L'] = population_generator.redshift2distance(z)['dl_mpc'] * 3.086e24
 		
-
 		ebv = dustmap.ebv(ra, dec)
 		
 		partial_query_output = collectTemporalOverlap(query_output, t0, 350.)
@@ -269,8 +337,6 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 						  'lightcurves': {}}
 		
 		flt_dict = {}
-		
-		print('### beginning filter loop')
 		
 		for flt in lightcurve_settings['filters']:
 		
@@ -293,16 +359,42 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 			
 			else:
 			
-				nu = np.full(len(tobs), c / goto_wleffs[flt])
-				flux_mJy = grb.fluxDensity(tobs, nu, **grb_settings) * 1000.
-				mags = mJy2ABmag(flux_mJy, goto_wleffs[flt])
+				bandpass = np.loadtxt('bandpasses/%s' %flt)
+				wl = bandpass[:,0]
+			
+				flux_mJy_total = np.zeros_like(tobs)
+				nu_single = np.full(len(tobs), c / wl[0])
+
+				flux_old = grb.fluxDensity(tobs, nu_single, **grb_settings)
+
+				for i in range(step_sizen + 1, len(wl), step_sizen):
+					
+# 					print(i, wl[i])
+	
+					nu_single[:] = c / wl[i]
+	
+					flux_new = grb.fluxDensity(tobs, nu_single, **grb_settings)
+	
+					height = wl[i] - wl[i-step_sizen]
+	
+					flux_mJy_total += 0.5*(flux_old + flux_new)*height
+	
+					flux_old = flux_new
+			
+# 				nu = np.full(len(tobs), c / goto_wleffs[flt])
+# 				flux_mJy = grb.fluxDensity(tobs, nu, **grb_settings)
+# 				mags = mJy2ABmag(flux_mJy, goto_wleffs[flt])
+				mags = mJy2ABmag(flux_mJy_total, goto_wleffs[flt])
+				
+				A_ex = extinction.fitzpatrick99(np.array([goto_wleffs[flt]]), 3.1 * ebv)
+# 				print(A_ex)
 
 				ind = np.where(mags < mag5sig)
 				tobs_rec = tobs[ind]
 				mags_rec = mags[ind]
 			
-				lc_dict = {'tobs': list(tobs),
-						   'mags': list(mags),
+				lc_dict = {'tobs': list(tobs / seconds_in_day),
+						   'mags': list(mags + A_ex[0]),
 						   'limmag5': list(mag5sig),
 						   'tobs_rec': list(tobs_rec),
 						   'mags_rec': list(mags_rec)}

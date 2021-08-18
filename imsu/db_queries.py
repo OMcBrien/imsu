@@ -15,14 +15,14 @@ def establishConnection(phase = 4):
 
 	return db_conn
 
-def queryDB(db_conn, query_settings, universe_settings):
+def queryDB(db_conn, query_settings):
 
 	t0 = time.time()
 
 	if not query_settings['dbevent']:
 	
-		survey_begin = universe_settings['time observing']['survey begin']
-		survey_end = universe_settings['time observing']['survey end']
+		survey_begin = query_settings['time observing']['survey begin']
+		survey_end = query_settings['time observing']['survey end']
 	
 		query_output = db_conn.query("SELECT * FROM image WHERE image.jd BETWEEN {} and {}".format(survey_begin, survey_end))
 		query_output.to_csv('{}.csv'.format(query_settings['query file']), index = False)

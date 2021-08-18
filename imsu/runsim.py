@@ -11,7 +11,6 @@ def main():
 	(all_settings,
 	program_settings,
 	query_settings,
-	survey_settings,
 	lightcurve_settings,
 	grb_settings,
 	recovery_settings) = common_tools.readSettings()
@@ -21,8 +20,7 @@ def main():
 	if program_settings['Query Database']:
 
 		db_conn = db_queries.establishConnection()
-		query_output = db_queries.queryDB(db_conn, query_settings, survey_settings)
-
+		query_output = db_queries.queryDB(db_conn, query_settings)
 
 	else:
 		
@@ -30,12 +28,19 @@ def main():
 			sys.exit('No query results exist. Enable query execution.')
 		else:
 			query_output = pd.read_csv(query_settings['query file'] + '.csv', dtype = {'dbevent': str, 'tilename': str})
-		
+	
+	the_survey = common_tools.BoxSurvey(query_output)
+	
+	print(the_survey.begin_jd)
+	print(the_survey.end_jd)
+	print(the_survey.lower_ra_bound)
+	print(the_survey.upper_ra_bound)
+	print(the_survey.lower_dec_bound)
+	print(the_survey.upper_dec_bound)
+	
 	if program_settings['Generate Transients']:
 		
-		population_settings = population_generator.setPopulationDistances(survey_settings, lightcurve_settings)
-		population_settings = population_generator.setPopulationExplosionEpochs(survey_settings, lightcurve_settings, population_settings)
-		population_settings = population_generator.setPopulationSkyCoords(survey_settings, lightcurve_settings, population_settings)
+		population_settings = population_generator.generatePopulation(the_survey, lightcurve_settings)
 		
 		population_settings = pd.DataFrame(population_settings)
 		population_settings.to_csv(lightcurve_settings['population']['population file'] + '.csv', index = False)
@@ -54,10 +59,16 @@ def main():
 			
 			lc_population = lc_generator.generateGRBLightcurvePopulation(query_output, population_settings, lightcurve_settings, grb_settings)
 		
+		elif lightcurve_settings['population']['transient type'] == 'Kilonova':
+			
+			lc_generator.registerBandpasses()
+			source = lc_generator.addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, redshift = 0.00984, min_wl = 3400., max_wl = 22300., npoints = 40000)
+			lc_population = lc_generator.generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, source)
+		
 		else:
 
 			lc_generator.registerBandpasses()
-			lc_population = lc_generator.generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings)
+			lc_population = lc_generator.generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, source = None)
 	
 	else:
 	
@@ -95,12 +106,12 @@ def main():
 		plotting_suite.make2DHistogramGOTOPointings(query_output, lightcurve_settings)
 		plotting_suite.plotLimitingMagnitudesFromQuery(query_output, lightcurve_settings)
 		
-		plotting_suite.makeRedshiftHistogram(population_settings, survey_settings)
-		plotting_suite.makeExplosionEpochHistogram(population_settings, survey_settings)
+		plotting_suite.makeRedshiftHistogram(population_settings, lightcurve_settings)
+		plotting_suite.makeExplosionEpochHistogram(population_settings, the_survey)
 		
-		plotting_suite.make2DHistogramRecoveredPointings(population_settings, survey_settings)
+		plotting_suite.make2DHistogramRecoveredPointings(population_settings)
 
-# 		plotting_suite.plotTransientLightcurves(lc_population, lightcurve_settings)
+		plotting_suite.plotTransientLightcurves(lc_population, lightcurve_settings)
 		
 		
 	

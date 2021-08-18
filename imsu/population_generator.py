@@ -139,94 +139,117 @@ def distance2redshift(
     
 ######
 
-def setPopulationDistances(survey_settings, lightcurve_settings):
+def setTransientIDs(nobjects):
+
+	return ['transient_%s' %(str(x)) for x in range(0, nobjects)]
+
+def setPopulationDistances(nobjects, lightcurve_settings):
 
 	t0 = time.time()
 
-	nobjects = lightcurve_settings['population']['number to inject']
-
-	min_redshift = np.array(survey_settings['depth']['min redshift'])
-	max_redshift = np.array(survey_settings['depth']['max redshift'])
+	nevents = lightcurve_settings['population']['number to inject']
+	nshells = 75
 	
-	if min_redshift == 0.0:
-		
-		min_distance = 0.0
-		min_volume_enclosed = 0.0
-		
+	if lightcurve_settings['depth']['min redshift'] == 0.0:
+		min_redshift = 0.000001
 	else:
+		min_redshift = lightcurve_settings['depth']['min redshift']
 	
-		min_distance = redshift2distance(min_redshift)['dl_mpc']
-		min_volume_enclosed = (4./3.) * np.pi * min_distance**3
-	
-	max_distance = redshift2distance(max_redshift)['dl_mpc']
-	max_volume_enclosed = (4./3.) * np.pi * max_distance**3
-	
-	volumes_enclosed = [random.uniform( min_volume_enclosed, max_volume_enclosed) for nelements in range(nobjects)]
-	
-	distances = ((3./4.) * (1./np.pi) * np.array(volumes_enclosed))**(1./3.)
-	
-# 	plt.hist(distances, bins = int(np.sqrt(nobjects)))
-# 	plt.xlabel('Distance (Mpc)')
-# 	plt.show()
-	
+	max_redshift = lightcurve_settings['depth']['max redshift']
+
+	redshift = np.linspace(min_redshift, max_redshift, nshells)
+
+	redshiftl = redshift[:-1]
+	redshiftu = redshift[1:]
+	redshiftm = (redshiftl + redshiftu) / 2.
+
+	distancem = [redshift2distance(x)['dl_mpc'] for x in redshiftm]
+	distancel = [redshift2distance(x)['dl_mpc'] for x in redshiftl]
+	distanceu = [redshift2distance(x)['dl_mpc'] for x in redshiftu]
+
+
+	volumem = (4. / 3.)* np.pi * (np.array(distancem))**3
+	volumel = (4. / 3.)* np.pi * (np.array(distancel))**3
+	volumeu = (4. / 3.)* np.pi * (np.array(distanceu))**3
+	volume_total = volumeu[-1]
+
+	wredshift = (volumeu - volumel) / volume_total
+	indices = np.arange(0, nshells - 1, 1)
+
 	redshifts = []
+
+	for i in range(0, nevents):
+
+		the_index = random.choices(indices, weights = wredshift, k = 1)
+		redshifts.append(random.uniform(redshiftl[the_index[0]], redshiftu[the_index[0]]))
+	
+	distances = [redshift2distance(x)['dl_mpc'] for x in redshifts]	
 	
 	t1 = time.time()
-	print('Distance distribution performed in %.4f s' %(t1 - t0))
-	
-	for distance in distances:
-	
-		redshifts.append(distance2redshift(distance))
-	
-	t2 = time.time()
-	print('Distance to redshift conversion in %.4f s' %(t2 - t1))
-	
-# 	plt.hist(redshifts, bins = int(np.sqrt(nobjects)))
-# 	plt.xlabel('Redshifts, $z$')
-# 	plt.show()
-	
-	transient_id = ['transient_%s' %(str(x)) for x in range(0, nobjects)]
-	
-	population_settings = {'transient_id': transient_id, 'distances': list(distances), 'redshifts': redshifts}
+	print('Distances/redshifts set in %.3f s' %(t1-t0))
 
-	return population_settings
+	return list(distances), list(redshifts)
 
-def setPopulationExplosionEpochs(survey_settings, lightcurve_settings, population_settings):
+def setPopulationExplosionEpochs(nobjects, the_survey, lightcurve_settings):
 
 	nobjects = lightcurve_settings['population']['number to inject']
 
-	survey_begin = survey_settings['time observing']['survey begin']
-	survey_end = survey_settings['time observing']['survey end']
+	survey_begin = the_survey.begin_jd
+	survey_end = the_survey.end_jd
 
 	explosion_epochs = [random.uniform( survey_begin, survey_end) for nelements in range(nobjects)]
 	
-	population_settings.update({'explosion epochs': explosion_epochs})
+# 	population_settings.update({'explosion epochs': explosion_epochs})
 
-	return population_settings
+	return list(explosion_epochs)
 	
-def setPopulationSkyCoords(survey_settings, lightcurve_settings, population_settings):
+def setPopulationSkyCoords(nobjects, the_survey, lightcurve_settings):
 
-	nobjects = lightcurve_settings['population']['number to inject']
-
-	min_ra = survey_settings['sky visible']['min ra']
-	max_ra = survey_settings['sky visible']['max ra']
-	min_dec = survey_settings['sky visible']['min dec']
-	max_dec = survey_settings['sky visible']['max dec']
+	min_ra = the_survey.lower_ra_bound
+	max_ra = the_survey.upper_ra_bound
+	min_dec = the_survey.lower_dec_bound
+	max_dec = the_survey.upper_dec_bound
 	
 	ras = [random.uniform( min_ra, max_ra) for nelements in range(nobjects)]
 	
-# 	plt.hist(ras, bins = int(np.sqrt(nobjects)))
-# 	plt.xlabel('RA (deg.)')
+# 	print('Declination setting is done with a triangular distribution. Please fix.')
+# 	decs = [random.triangular( min_dec, max_dec, 0.0) for nelements in range(nobjects)]
+
+	decs = []
+
+	dec = np.linspace(min_dec, max_dec, 50)
+
+	decl = dec[:-1]
+	decu = dec[1:]
+
+	decm = (decl + decu) / 2.
+	wdec = np.cos(decm * np.pi/180.)
+
+	indices = np.arange(0, 49, 1)
+
+	for i in range(0, nobjects):
+
+		the_index = random.choices(indices, weights = wdec, k = 1)
+	# 	print(the_index)
+		decs.append(random.uniform(decl[the_index[0]], decu[the_index[0]]))
+	
+# 	plt.hist(decs, bins = 50)
 # 	plt.show()
 	
-	print('Declination setting is done with a triangular distribution. Please fix.')
-	decs = [random.triangular( min_dec, max_dec, 0.0) for nelements in range(nobjects)]
+# 	population_settings.update({'ras': ras, 'decs': decs})
 	
-# 	plt.hist(decs, bins = int(np.sqrt(nobjects)))
-# 	plt.xlabel('Dec (deg.)')
-# 	plt.show()
+	return list(ras), list(decs)
+
+def generatePopulation(the_survey, lightcurve_settings):
+
+	nobjects = lightcurve_settings['population']['number to inject']
 	
-	population_settings.update({'ras': ras, 'decs': decs})
+	transient_ids = setTransientIDs(nobjects)
+	distances, redshifts = setPopulationDistances(nobjects, lightcurve_settings)
+	explosion_epochs = setPopulationExplosionEpochs(nobjects, the_survey, lightcurve_settings)
+	ras, decs = setPopulationSkyCoords(nobjects, the_survey, lightcurve_settings)
 	
-	return population_settings
+	return {'transient_id': transient_ids, 'distances': distances, 'redshifts': redshifts, 'explosion epochs': explosion_epochs, 'ras': ras, 'decs': decs}
+	
+	
 

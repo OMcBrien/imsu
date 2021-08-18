@@ -53,12 +53,12 @@ def plotLimitingMagnitudesFromQuery(query_output, lightcurve_settings):
 	plt.tight_layout()
 	plt.show()
 
-def makeRedshiftHistogram(population_settings, survey_settings):
+def makeRedshiftHistogram(population_settings, lightcurve_settings):
 
 	df_rec = population_settings.where(population_settings['detected'] == True)
 	df_nrec = population_settings.where(population_settings['detected'] == False)
 	
-	the_bins = np.linspace(survey_settings['depth']['min redshift'], survey_settings['depth']['max redshift'], 15)
+	the_bins = np.linspace(lightcurve_settings['depth']['min redshift'], lightcurve_settings['depth']['max redshift'], 15)
 	
 	plt.hist([df_rec['redshifts'], df_nrec['redshifts']],
 				bins = the_bins,
@@ -77,12 +77,12 @@ def makeRedshiftHistogram(population_settings, survey_settings):
 	plt.tight_layout()
 	plt.show()
 
-def makeExplosionEpochHistogram(population_settings, survey_settings):
+def makeExplosionEpochHistogram(population_settings, the_survey):
 
 	df_rec = population_settings.where(population_settings['detected'] == True)
 	df_nrec = population_settings.where(population_settings['detected'] == False)
 	
-	the_bins = np.linspace(survey_settings['time observing']['survey begin'], survey_settings['time observing']['survey end'], 15)
+	the_bins = np.linspace(the_survey.begin_jd, the_survey.end_jd, 15)
 	
 	plt.hist([df_rec['explosion epochs'], df_nrec['explosion epochs']],
 				bins = the_bins,
@@ -101,7 +101,7 @@ def makeExplosionEpochHistogram(population_settings, survey_settings):
 	plt.tight_layout()
 	plt.show()
 
-def make2DHistogramRecoveredPointings(population_settings, survey_settings):
+def make2DHistogramRecoveredPointings(population_settings):
 	
 	df_rec = population_settings.where(population_settings['detected'] == True).dropna(how = 'all')
 	df_nrec = population_settings.where(population_settings['detected'] == False).dropna(how = 'all')
@@ -161,7 +161,7 @@ def plotTransientLightcurves(lc_population, lightcurve_settings):
 		
 		counter += 1
 		
-		if counter >= 25:
+		if counter >= 15:
 			break
 	
 	

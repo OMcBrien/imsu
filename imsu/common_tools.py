@@ -25,7 +25,6 @@ def readSettings(path_to_settings = 'settings.yaml'):
 	
 	program_settings = all_settings['Program Settings']
 	query_settings = all_settings['Query Settings']
-	survey_settings = all_settings['Survey Settings']
 	lightcurve_settings = all_settings['Lightcurve Settings']
 	grb_settings = all_settings['GRB Settings']
 	recovery_settings = all_settings['Recovery Settings']
@@ -33,10 +32,37 @@ def readSettings(path_to_settings = 'settings.yaml'):
 	return (all_settings,
 			program_settings,
 			query_settings,
-			survey_settings,
 			lightcurve_settings,
 			grb_settings,
 			recovery_settings)
+
+class BoxSurvey:
+	
+	def __init__(self, query_output):
+		
+		self.begin_jd = query_output['jd'].min()
+		self.end_jd = query_output['jd'].max()
+		
+		self.lower_ra_bound = query_output['ra_c'].min()
+		self.upper_ra_bound = query_output['ra_c'].max()
+		
+		self.lower_dec_bound = query_output['dec_c'].min()
+		self.upper_dec_bound = query_output['dec_c'].max()
+
+class EllipseSurvey:
+	
+	def __init__(self, query_output, PLACEHOLDER_ELLIPSE_SETTINGS):
+		
+		self.begin_jd = query_output['jd'].min()
+		self.end_jd = query_output['jd'].max()
+		
+		self.central_ra = PLACEHOLDER_ELLIPSE_SETTINGS['central ra']
+		self.central_dec = PLACEHOLDER_ELLIPSE_SETTINGS['central dec']
+		
+		self.semi_major_axis = PLACEHOLDER_ELLIPSE_SETTINGS['semi major axis']
+		self.semi_minor_axis = PLACEHOLDER_ELLIPSE_SETTINGS['semi minor axis']
+		
+		
 
 def setPlottingParameters():
 
