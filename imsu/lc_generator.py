@@ -4,6 +4,7 @@ import sncosmo
 import afterglowpy as grb
 import sfdmap
 import json
+import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -18,22 +19,16 @@ def mJy2ABmag(F_nu, wl):
 	
 	return AB_mag
 
-def registerBandpasses():
+def registerBandpasses(lightcurve_settings):
 
-	L_data = np.loadtxt('bandpasses/gotoL')
-	R_data = np.loadtxt('bandpasses/gotoR')
-	G_data = np.loadtxt('bandpasses/gotoG')
-	B_data = np.loadtxt('bandpasses/gotoB')
+	for flt in lightcurve_settings['telescope properties']['filter effective wavelengths'].keys():
+		
+		print('Registering ', flt)
 
-	L_band = sncosmo.Bandpass(L_data[:,0], L_data[:,1], name = 'gotoL')
-	R_band = sncosmo.Bandpass(R_data[:,0], R_data[:,1], name = 'gotoR')
-	G_band = sncosmo.Bandpass(G_data[:,0], G_data[:,1], name = 'gotoG')
-	B_band = sncosmo.Bandpass(B_data[:,0], B_data[:,1], name = 'gotoB')
-	
-	sncosmo.register(L_band)
-	sncosmo.register(R_band)
-	sncosmo.register(G_band)
-	sncosmo.register(B_band)
+		flt_data = np.loadtxt('bandpasses/%s' %str(flt))
+		flt_band = sncosmo.Bandpass(flt_data[:,0], flt_data[:,1], name = str(flt))
+		sncosmo.register(flt_band)
+
 
 def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, redshift = 0.00984, min_wl = 3400., max_wl = 22300., npoints = 40000):
 
@@ -65,10 +60,10 @@ def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, re
 	
 		fluxes.append(new_flux)
 	
-		plt.plot(new_wl, new_flux, label = '%.3f' %(row['JD'] - explosion_epoch))
-
-	plt.legend()
-	plt.show()
+# 		plt.plot(new_wl, new_flux, label = '%.3f' %(row['JD'] - explosion_epoch))
+# 
+# 	plt.legend()
+# 	plt.show()
 
 	fluxes = np.array(fluxes, dtype = float)
 	obj_phase = np.array(obj_phase, dtype = float)
@@ -97,19 +92,24 @@ def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, re
 	return source
 
 
-def collectTemporalOverlap(query_output, explosion_epoch, duration):
+def collectTemporalOverlap(query_output, explosion_epoch, duration, column_headings):
+	
+	time_heading = column_headings['time']
 
-	partial_query_output = query_output.query('jd > {} & jd < {}'.format(explosion_epoch, explosion_epoch + duration))
+	partial_query_output = query_output.query('{} > {} & {} < {}'.format(time_heading, explosion_epoch, time_heading, explosion_epoch + duration))
 
 # 	print('### partial query, post-temp. filtering')
 # 	print(partial_query_output[['jd', 'ra_c', 'dec_c']])
 
 	return partial_query_output
 
-def collectFootprintOverlap(query_output, ra_trans, dec_trans):
+def collectFootprintOverlap(query_output, ra_trans, dec_trans, lightcurve_settings):
+	
+	ra_heading = lightcurve_settings['telescope properties']['column headings']['ra']
+	dec_heading = lightcurve_settings['telescope properties']['column headings']['dec']
 
-	chip_height = 2.8 # degrees
-	chip_width = 2.1  # degrees
+	chip_width = lightcurve_settings['telescope properties']['chip width'] / 2.
+	chip_height = lightcurve_settings['telescope properties']['chip height'] / 2.
 	
 	max_allowed_ra = 360.
 	min_allowed_ra = 0.
@@ -123,91 +123,49 @@ def collectFootprintOverlap(query_output, ra_trans, dec_trans):
 	# Filter RA first as it wraps (360 --> 0 degrees)
 	if upper_transient_ra_bound > max_allowed_ra:
 	
-		partial_query_output = query_output.query('ra_c >= %f | ra_c <= %f' %(lower_transient_ra_bound, (upper_transient_ra_bound - max_allowed_ra)) )
+		partial_query_output = query_output.query('%s >= %f | %s <= %f' %(ra_heading, lower_transient_ra_bound, ra_heading, (upper_transient_ra_bound - max_allowed_ra)) )
 	
 	elif lower_transient_ra_bound < min_allowed_ra:
 	
-		partial_query_output = query_output.query('ra_c >= %f | ra_c <= %f' %((lower_transient_ra_bound + max_allowed_ra), (upper_transient_ra_bound - max_allowed_ra)) )
+		partial_query_output = query_output.query('%s >= %f | %s <= %f' %(ra_heading, (lower_transient_ra_bound + max_allowed_ra), ra_heading, (upper_transient_ra_bound - max_allowed_ra)) )
 	
 	else:
 
-		partial_query_output = query_output.query('ra_c >= %f & ra_c <= %f' %(lower_transient_ra_bound, upper_transient_ra_bound) )
+		partial_query_output = query_output.query('%s >= %f & %s <= %f' %(ra_heading, lower_transient_ra_bound, ra_heading, upper_transient_ra_bound) )
 	
 	# Now filter by DEC
-	partial_query_output = partial_query_output.query('dec_c >= %f & dec_c <= %f' %(lower_transient_dec_bound, upper_transient_dec_bound) )
-
-# 	print('### partial query, post-ra/dec filtering')
-# 	print(partial_query_output[['jd', 'ra_c', 'dec_c']])
+	partial_query_output = partial_query_output.query('%s >= %f & %s <= %f' %(dec_heading, lower_transient_dec_bound, dec_heading, upper_transient_dec_bound) )
 
 	return partial_query_output
 
-def collectFilterOverlap(query_output, flt):
-
-	flt_dict = {'gotoL': 'L', 'gotoR': 'R', 'gotoG': 'G', 'gotoB': 'B'}
+def collectFilterOverlap(query_output, column_headings, flt):
 	
-	partial_query_output = query_output.query('filter == "%s"' %(flt_dict[flt]))
-	
-# 	print('### partial query, post-flt filtering')
-# 	print(partial_query_output[['jd', 'ra_c', 'dec_c', 'filter']])
+	partial_query_output = query_output.query('%s == "%s"' %(column_headings['filter'], flt))
 
 	return partial_query_output
 
-def collectFootprintOverlapLoop(query_output, ra_trans, dec_trans):
 
-# 	partial_query_output = query_output.query('ra_sw > {} & ra_nw > {} & ra_se < {} & ra_ne < {}'.format(ra_trans, ra_trans, ra_trans, ra_trans))
-
-	ra_sw = np.array(query_output['ra_sw'])
-	ra_se = np.array(query_output['ra_se'])
-	dec_nw = np.array(query_output['dec_nw'])
-	dec_sw = np.array(query_output['dec_sw'])
-	
-	for i in range(0, len(ra_sw)):
-		
-		if dec_sw[i] < dec_trans and dec_nw[i] > dec_trans:
-			if ra_sw[i] < ra_trans and ra_se[i] > ra_trans:
-				print(ra_sw[i], ra_trans, ra_se[i], dec_sw[i], dec_trans, dec_nw[i])
-
-	
-	return None
-
-def generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, source):
+def generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, io_settings, source):
 
 	tlc0 = time.time()
 
 	transient_type = lightcurve_settings['population']['transient type']
 	
-	the_source = {'SN Ia': 'nugent-sn1a',
-				  'SN Ib/c': 'nugent-sn1bc',
-				  'SN II-P': 'nugent-sn2p',
-				  'SN II-L': 'nugent-sn2l',
-				  'SN IIn': 'nugent-sn2n',
-				  'Kilonova': 'kilonova_2017gfo'}
-					
-	if not transient_type in the_source.keys():
-		
-		print('Transient type not recognised. Please use one of the following:\n')
-		
-		for k in the_source.keys():
-			print(' *\t', k)
-		
-		sys.exit()
+	with open('sources.yaml', 'r') as stream:
+		loader = yaml.SafeLoader
+		sources = yaml.load(stream, Loader = loader)
 	
-	the_duration = {'SN Ia': 95.,
-					'SN Ib/c': 95.,
-					'SN II-P': 120.,
-					'SN II-L': 140.,
-					'SN IIn': 130.,
-					'Kilonova': 10.}
-					
-	the_peak = {'SN Ia': -19.,
-				'SN Ib/c': -18.,
-				'SN II-P': -17.5,
-				'SN II-L': -17.,
-				'SN IIn': -17.5,
-				'Kilonova': -16.}
+	source_info = sources[transient_type]
+	
+	filters_in_use = list(lightcurve_settings['telescope properties']['filter effective wavelengths'].keys())
+	filter_keys = lightcurve_settings['telescope properties']['column headings']['filter keys']
+	
+	dict_flt_keys = dict( zip( filters_in_use, filter_keys ) )
+	
+	column_headings = lightcurve_settings['telescope properties']['column headings']
 
 	dust = sncosmo.CCM89Dust()
-	dustmap = sfdmap.SFDMap('sfdmaps/sfddata-master')
+	dustmap = sfdmap.SFDMap(io_settings['sfdmaps path'])
 	
 	if source:
 
@@ -215,7 +173,7 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 	
 	else:
 	
-		model = sncosmo.Model(source = the_source[transient_type], effects = [dust, dust], effect_names = ['host', 'mw'], effect_frames = ['rest', 'obs'])
+		model = sncosmo.Model(source = source_info['source'], effects = [dust, dust], effect_names = ['host', 'mw'], effect_frames = ['rest', 'obs'])
 	
 	main_lc_dict = {}
 
@@ -232,10 +190,10 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 
 		model.update({'z': z, 't0': t0, 'mwebv': ebv})
 	
-		model.set_source_peakabsmag(the_peak[transient_type], 'gotoL', 'ab')
+		model.set_source_peakabsmag(source_info['peak magnitude'], filters_in_use[0], 'ab')
 		
-		partial_query_output = collectTemporalOverlap(query_output, t0, the_duration[transient_type])
-		partial_query_output = collectFootprintOverlap(partial_query_output, ra, dec)
+		partial_query_output = collectTemporalOverlap(query_output, t0, source_info['duration'], column_headings)
+		partial_query_output = collectFootprintOverlap(partial_query_output, ra, dec, lightcurve_settings)
 
 		transient_dict = {'explosion epoch': t0,
 						  'distance': distance,
@@ -247,12 +205,12 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 		
 		flt_dict = {}
 		
-		for flt in lightcurve_settings['filters']:
+		for flt in filters_in_use:
 		
-			flt_partial_query_output = collectFilterOverlap(partial_query_output, flt).sort_values(['jd'])
+			flt_partial_query_output = collectFilterOverlap(partial_query_output, column_headings, dict_flt_keys[flt]).sort_values(lightcurve_settings['telescope properties']['column headings']['time'])
 		
-			tobs = np.array(flt_partial_query_output['jd'])
-			mag5sig = np.array(flt_partial_query_output['limmag5'])
+			tobs = np.array(flt_partial_query_output[column_headings['time']])
+			mag5sig = np.array(flt_partial_query_output[column_headings['limiting mag']])
 			
 			mags = model.bandmag(flt, 'ab', tobs)
 			
@@ -274,22 +232,23 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 	
 	tlc1 = time.time()
 	print('Lightcurves generated in %.4f s' %(tlc1 - tlc0))
-	
-	with open(lightcurve_settings['lightcurve file'] + '.json', 'w') as f:
-		json.dump(main_lc_dict, f, indent = 4)
 
 	return main_lc_dict
 
-def generateGRBLightcurvePopulation(query_output, population_settings, lightcurve_settings, grb_settings):
+def generateGRBLightcurvePopulation(query_output, population_settings, lightcurve_settings, grb_settings, io_settings):
 	
 	jet_type_dict = {'TopHat': grb.jet.TopHat,
 					 'Gaussian': grb.jet.Gaussian,
 					 'PowerLaw': grb.jet.PowerLaw}
 	
-	goto_wleffs = {'gotoL': 5396.65,
-				   'gotoR': 6405.05,
-				   'gotoG': 5355.32, 
-				   'gotoB': 4600.58}
+	filters_in_use = list(lightcurve_settings['telescope properties']['filter effective wavelengths'].keys())
+	filter_keys = lightcurve_settings['telescope properties']['column headings']['filter keys']
+	
+	dict_flt_keys = dict( zip( filters_in_use, filter_keys ) )
+	
+	column_headings = lightcurve_settings['telescope properties']['column headings']
+	
+	effective_wavelengths = lightcurve_settings['telescope properties']['filter effective wavelengths']
 				   
 	c = 3.e18
 	seconds_in_day = 8.64e4
@@ -300,16 +259,13 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 				   'gotoG': c / 5355.32, 
 				   'gotoB': c / 4600.58}
 	
-	goto_colours = {'gotoL': 'goldenrod',
-					'gotoR': 'firebrick',
-					'gotoG': 'limegreen', 
-					'gotoB': 'royalblue'}
+	effective_frequencies = {k: c / v for k, v in effective_wavelengths.items()}
 	
 	grb_settings['jetType'] = jet_type_dict[grb_settings['jetType']]
 	
 	main_lc_dict = {}
 	
-	dustmap = sfdmap.SFDMap('sfdmaps/sfddata-master')
+	dustmap = sfdmap.SFDMap(io_settings['sfdmaps path'])
 
 	for index, row in population_settings.iterrows():
 	
@@ -325,8 +281,8 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 		
 		ebv = dustmap.ebv(ra, dec)
 		
-		partial_query_output = collectTemporalOverlap(query_output, t0, 350.)
-		partial_query_output = collectFootprintOverlap(partial_query_output, ra, dec)
+		partial_query_output = collectTemporalOverlap(query_output, t0, 350., column_headings)
+		partial_query_output = collectFootprintOverlap(partial_query_output, ra, dec, lightcurve_settings)
 
 		transient_dict = {'explosion epoch': t0,
 						  'distance': distance,
@@ -338,12 +294,12 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 		
 		flt_dict = {}
 		
-		for flt in lightcurve_settings['filters']:
+		for flt in filters_in_use:
 		
-			flt_partial_query_output = collectFilterOverlap(partial_query_output, flt).sort_values(['jd'])
+			flt_partial_query_output = collectFilterOverlap(partial_query_output, column_headings, dict_flt_keys[flt]).sort_values(lightcurve_settings['telescope properties']['column headings']['time'])
 		
-			tobs = (np.array(flt_partial_query_output['jd']) - t0) * seconds_in_day
-			mag5sig = np.array(flt_partial_query_output['limmag5'])
+			tobs = (np.array(flt_partial_query_output[column_headings['time']]) - t0) * seconds_in_day
+			mag5sig = np.array(flt_partial_query_output[column_headings['limiting mag']])
 			
 			if len(tobs) == 0:
 			
@@ -381,12 +337,12 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 	
 					flux_old = flux_new
 			
-# 				nu = np.full(len(tobs), c / goto_wleffs[flt])
+# 				nu = np.full(len(tobs), c / effective_wavelengths[flt])
 # 				flux_mJy = grb.fluxDensity(tobs, nu, **grb_settings)
-# 				mags = mJy2ABmag(flux_mJy, goto_wleffs[flt])
-				mags = mJy2ABmag(flux_mJy_total, goto_wleffs[flt])
+# 				mags = mJy2ABmag(flux_mJy, effective_wavelengths[flt])
+				mags = mJy2ABmag(flux_mJy_total, effective_wavelengths[flt])
 				
-				A_ex = extinction.fitzpatrick99(np.array([goto_wleffs[flt]]), 3.1 * ebv)
+				A_ex = extinction.fitzpatrick99(np.array([effective_wavelengths[flt]]), 3.1 * ebv)
 # 				print(A_ex)
 
 				ind = np.where(mags < mag5sig)
@@ -396,8 +352,8 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 				lc_dict = {'tobs': list(tobs / seconds_in_day),
 						   'mags': list(mags + A_ex[0]),
 						   'limmag5': list(mag5sig),
-						   'tobs_rec': list(tobs_rec),
-						   'mags_rec': list(mags_rec)}
+						   'tobs_rec': list(tobs_rec / seconds_in_day),
+						   'mags_rec': list(mags_rec + A_ex[0])}
 			
 				flt_dict.update({flt: lc_dict})
 
@@ -408,6 +364,9 @@ def generateGRBLightcurvePopulation(query_output, population_settings, lightcurv
 	
 	return main_lc_dict
 
-# if __name__ == '__main__':
+def saveLightcurveData(lightcurve_path, lc_population):
+	
+	with open(lightcurve_path, 'w') as f:
+		json.dump(lc_population, f, indent = 4)
 
 	

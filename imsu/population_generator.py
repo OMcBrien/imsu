@@ -2,7 +2,9 @@ import sncosmo
 import random
 import math
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.path as mpltPath
 import time
 
 ## LAST MODIFIED : April 15, 2013
@@ -137,6 +139,22 @@ def distance2redshift(
 
     return redshift
     
+def getWeightedDeclination(lower_bound, upper_bound, nbands = 75):
+
+	dec = np.linspace(lower_bound, upper_bound, nbands)
+
+	decl = dec[:-1]
+	decu = dec[1:]
+
+	decm = (decl + decu) / 2.
+	wdec = np.cos(decm * np.pi/180.)
+
+	indices = np.arange(0, nbands - 1, 1)
+
+	the_index = random.choices(indices, weights = wdec, k = 1)
+
+	return random.uniform(decl[the_index[0]], decu[the_index[0]])    
+
 ######
 
 def setTransientIDs(nobjects):
@@ -211,9 +229,6 @@ def setPopulationSkyCoords(nobjects, the_survey, lightcurve_settings):
 	max_dec = the_survey.upper_dec_bound
 	
 	ras = [random.uniform( min_ra, max_ra) for nelements in range(nobjects)]
-	
-# 	print('Declination setting is done with a triangular distribution. Please fix.')
-# 	decs = [random.triangular( min_dec, max_dec, 0.0) for nelements in range(nobjects)]
 
 	decs = []
 
@@ -230,15 +245,71 @@ def setPopulationSkyCoords(nobjects, the_survey, lightcurve_settings):
 	for i in range(0, nobjects):
 
 		the_index = random.choices(indices, weights = wdec, k = 1)
-	# 	print(the_index)
 		decs.append(random.uniform(decl[the_index[0]], decu[the_index[0]]))
 	
-# 	plt.hist(decs, bins = 50)
-# 	plt.show()
-	
-# 	population_settings.update({'ras': ras, 'decs': decs})
-	
 	return list(ras), list(decs)
+
+def setPopulationEllipseSkyCoords(nobjects, the_survey, lightcurve_settings):
+
+	ra_cen = lightcurve_settings['ellipse geometry']['central ra']
+	dec_cen = lightcurve_settings['ellipse geometry']['central dec']
+
+	a = lightcurve_settings['ellipse geometry']['semi major axis']
+	b = lightcurve_settings['ellipse geometry']['semi minor axis']
+	
+	rot_angle = lightcurve_settings['ellipse geometry']['rotation angle'] * np.pi / 180.
+
+
+	# regular polygon for testing
+	lenpoly = 200
+	polygon = [[ a*np.cos(x)*np.cos(rot_angle) - b*np.sin(x)*np.sin(rot_angle) + ra_cen, a*np.cos(x)*np.sin(rot_angle) + b*np.sin(x)*np.cos(rot_angle) + dec_cen] for x in np.linspace(0, 2*np.pi,lenpoly)[:-1]]
+	polygon = np.array(polygon)
+
+	path = mpltPath.Path(polygon)
+
+	ras_inside = np.array([])
+	decs_inside = np.array([])
+	
+	nobjects_togo = int(nobjects)
+	
+
+	while True:
+
+		coords_sample = np.array([(random.uniform( ra_cen - a, ra_cen + a ), getWeightedDeclination(dec_cen - a, dec_cen + a) ) for nelements in range(nobjects_togo)])
+
+		inside = path.contains_points(coords_sample)
+
+		ras = coords_sample[:,0]
+		decs = coords_sample[:,1]
+
+		ras_inside = np.append(ras_inside, ras[inside])
+		decs_inside = np.append(decs_inside, decs[inside])
+	
+		nobjects_togo = nobjects - len(ras_inside)
+	
+		if len(ras_inside) >= nobjects:
+	
+			break
+
+	fig = plt.figure(figsize = (10,8))
+	ax = plt.subplot(111)
+	ax.grid(True)
+	
+	ax.plot(polygon[:,0], polygon[:,1], ls = '-', color = 'red')
+	ax.plot(ra_cen, dec_cen, ls = 'None', marker = 'x', ms = 14, mfc = 'red', mec = 'red', zorder = 1000)
+
+	ax.plot(ras_inside, decs_inside, ls = 'None', marker = '.', ms = 3, mfc = 'green', mec = 'None')
+	# ax.plot(ras[~inside], decs[~inside], ls = 'None', marker = '.', ms = 2, mfc = 'blue', mec = 'None')
+
+	ax.set_xlabel('RA, deg.')
+	ax.set_ylabel('Dec, deg.')
+
+	ax.invert_xaxis()
+
+	plt.show()
+
+	
+	return list(ras_inside), list(decs_inside)
 
 def generatePopulation(the_survey, lightcurve_settings):
 
@@ -251,5 +322,14 @@ def generatePopulation(the_survey, lightcurve_settings):
 	
 	return {'transient_id': transient_ids, 'distances': distances, 'redshifts': redshifts, 'explosion epochs': explosion_epochs, 'ras': ras, 'decs': decs}
 	
+def generateGRBPopulation(the_survey, lightcurve_settings):
+
+	nobjects = lightcurve_settings['population']['number to inject']
 	
+	transient_ids = setTransientIDs(nobjects)
+	distances, redshifts = setPopulationDistances(nobjects, lightcurve_settings)
+	explosion_epochs = setPopulationExplosionEpochs(nobjects, the_survey, lightcurve_settings)
+	ras, decs = setPopulationEllipseSkyCoords(nobjects, the_survey, lightcurve_settings)
+	
+	return {'transient_id': transient_ids, 'distances': distances, 'redshifts': redshifts, 'explosion epochs': explosion_epochs, 'ras': ras, 'decs': decs}
 

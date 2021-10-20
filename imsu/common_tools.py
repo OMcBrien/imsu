@@ -28,39 +28,41 @@ def readSettings(path_to_settings = 'settings.yaml'):
 	lightcurve_settings = all_settings['Lightcurve Settings']
 	grb_settings = all_settings['GRB Settings']
 	recovery_settings = all_settings['Recovery Settings']
+	io_settings = all_settings['IO Settings']
 	
 	return (all_settings,
 			program_settings,
 			query_settings,
 			lightcurve_settings,
 			grb_settings,
-			recovery_settings)
+			recovery_settings,
+			io_settings)
 
 class BoxSurvey:
 	
-	def __init__(self, query_output):
+	def __init__(self, query_output, column_headings):
 		
-		self.begin_jd = query_output['jd'].min()
-		self.end_jd = query_output['jd'].max()
+		self.begin_jd = query_output[column_headings['time']].min()
+		self.end_jd = query_output[column_headings['time']].max()
 		
-		self.lower_ra_bound = query_output['ra_c'].min()
-		self.upper_ra_bound = query_output['ra_c'].max()
+		self.lower_ra_bound = query_output[column_headings['ra']].min()
+		self.upper_ra_bound = query_output[column_headings['ra']].max()
 		
-		self.lower_dec_bound = query_output['dec_c'].min()
-		self.upper_dec_bound = query_output['dec_c'].max()
+		self.lower_dec_bound = query_output[column_headings['dec']].min()
+		self.upper_dec_bound = query_output[column_headings['dec']].max()
 
 class EllipseSurvey:
 	
-	def __init__(self, query_output, PLACEHOLDER_ELLIPSE_SETTINGS):
+	def __init__(self, query_output, column_headings, ellipse_geometry):
 		
-		self.begin_jd = query_output['jd'].min()
-		self.end_jd = query_output['jd'].max()
+		self.begin_jd = query_output[column_headings['time']].min()
+		self.end_jd = query_output[column_headings['time']].max()
 		
-		self.central_ra = PLACEHOLDER_ELLIPSE_SETTINGS['central ra']
-		self.central_dec = PLACEHOLDER_ELLIPSE_SETTINGS['central dec']
+		self.central_ra = ellipse_geometry['central ra']
+		self.central_dec = ellipse_geometry['central dec']
 		
-		self.semi_major_axis = PLACEHOLDER_ELLIPSE_SETTINGS['semi major axis']
-		self.semi_minor_axis = PLACEHOLDER_ELLIPSE_SETTINGS['semi minor axis']
+		self.semi_major_axis = ellipse_geometry['semi major axis']
+		self.semi_minor_axis = ellipse_geometry['semi minor axis']
 		
 		
 

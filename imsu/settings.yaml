@@ -6,39 +6,57 @@ Program Settings:
     Make Plots: True
 
 Query Settings:
-    dbevent: Fermi_583567803
-    query file: test_query_grb
-
-Survey Settings:
-    sky visible:
-        min ra: 300.
-        max ra: 315.
-        min dec: -12.
-        max dec: 8.
+    dbevent: Fermi_582725415
     time observing:
         survey begin: 2458659.0
         survey end: 2458671.0
-    depth:
-        min redshift: 0.000 
-        max redshift: 0.025 
-       
+    query file: 'QC_all_data_kws_57308_59024_20200624_merged_daves_moving_object_database_data'
+#   query file: 'test_query'
+      
 Lightcurve Settings:
     population:
         transient type: GRB
-        number to inject: 50
-        population file: test_population
-    filters:
-        - gotoL
-        - gotoR
-        - gotoG
-        - gotoB
-    lightcurve file: test_lcs
+        number to inject: 5000
+        population file: 'test_population_grb'
+    ellipse geometry:
+        central ra: 150.0
+        central dec: -30.0
+        semi major axis: 10.
+        semi minor axis: 6.
+        rotation angle: 315.
+    depth:
+        min redshift: 0.000
+        max redshift: 0.025
+    telescope properties:
+        filter effective wavelengths:
+            ATLASc: 5330.0
+            ATLASo: 6790.0
+#           gotoL: 5396.65
+#           gotoR: 6405.05
+#           gotoG: 5355.32
+#           gotoB: 4600.58
+        column headings:
+            time: 'MJDOBS'
+            ra: 'RA'
+            dec: 'DEC'
+            limiting mag: 'MAG5SIG'
+            filter: 'FILTER'
+            filter keys:
+                - c
+                - o
+#                - L
+#                - R
+#                - G
+#                - B
+        chip width: 5.46
+        chip height: 5.46
+    lightcurve file: 'test_lcs_grb'
 
 GRB Settings:
     jetType: 'Gaussian'         # TopHat, Gaussian or PowerLaw
     specType: 0                 # Basic Synchrotron Spectrum
     thetaObs: 0.40              # Viewing angle in radians
-    E0: 1.0e53              # Isotropic-equivalent energy in erg
+    E0: 1.0e53                  # Isotropic-equivalent energy in erg
     thetaCore: 0.066            # Half-opening angle in radians
     n0: 0.001995262314968879    # circumburst density in cm^{-3}
     p: 2.168                    # electron energy distribution index
@@ -48,19 +66,20 @@ GRB Settings:
 #    d_L: 1.0e28                 # Luminosity distance in cm
 #    z: 0.009727                 # redshift
     thetaWing: 0.47             # Wing angle in radians, I presume
-#    b: 6                        # Power law slope
+    b: 6                        # Power law slope
 
 Recovery Settings:
     min detection counts:
-        gotoL: 1
-        gotoR: 0
-        gotoB: 0 
-        gotoG: 0
+        ATLASc: 0
+        ATLASo: 1
     min nightly detection counts:
-        gotoL: 0
-        gotoR: 0
-        gotoB: 0 
-        gotoG: 0
+        ATLASc: 0
+        ATLASo: 0
+
+IO Settings:
+    results directory: 'test_atlas'
+    sfdmaps path: 'sfdmaps/sfddata-master'
+    
     
  
  

@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# My own additions
+imsu/tests
+imsu/results
+imsu/sfdmaps

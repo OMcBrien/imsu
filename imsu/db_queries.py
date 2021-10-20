@@ -30,7 +30,6 @@ def queryDB(db_conn, query_settings):
 	else:
 
 		query_output = db_conn.query("SELECT * FROM image WHERE image.dbevent = '{}'".format(query_settings['dbevent']))
-		query_output.to_csv('{}.csv'.format(query_settings['query file']), index = False)
 		
 	t1 = time.time()
 	

@@ -1,0 +1,29 @@
+SN Ia:
+    source: 'nugent-sn1a'
+    duration: 95.
+    peak magnitude: -19.0
+
+SN Ib/c:
+    source: 'nugent-sn1bc'
+    duration: 95.
+    peak magnitude: -18.0
+
+SN II-P:
+    source: 'nugent-sn2p'
+    duration: 120.
+    peak magnitude: -17.5
+
+SN II-L:
+    source: 'nugent-sn2l'
+    duration: 140.
+    peak magnitude: -17.0
+
+SN IIn:
+    source: 'nugent-sn2n'
+    duration: 130.
+    peak magnitude: -17.5
+
+Kilonova:
+    source: 'kilonova_2017gfo'
+    duration: 10.
+    peak magnitude: -16.0
