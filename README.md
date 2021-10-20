@@ -1,2 +1,9 @@
 # imsu
-Generalised imitation survey modules to help robotic telescopes with targeting (I hope).
+
+This is (hopefully) a generalised efficiency simulation code for astronomical surveys to use. It takes a list of pointings made by a telescope and returns a measurement of the efficiency with which that telescope can detect a particular astrophysical transients, like supernovae and kilonovae. I developed a [prototype version](https://github.com/OMcBrien/imitation-survey) of this for my PhD, specifically with the ATLAS project in mind ([Tonry et al. (2018)](https://ui.adsabs.harvard.edu/abs/2018PASP..130f4505T/abstract)), but rewrote it to be compatible with other robotic surveys, like GOTO ([Steeghs et al. (2021)](https://ui.adsabs.harvard.edu/abs/2021arXiv211005539S/abstract)). The principle of operation of both codes is the same, but this version is a good deal faster.
+
+A note on naming: I called this **imsu** as it is short for *imitation survey*, but at this moment in time the code doesn't provide proper imitation survey capabilities. It is instead, like the PhD prototype, an efficiency calculator for different transient phenomena. 
+
+## Basis of operation
+
+The code is divided into a few subroutines that handle its various stages of execution. The only user input is supposed to be through the settings file, `<settings.yaml>`. This documentation will explain in detail how the code runs and how to interpret the results. To give an overview, the code will generate a population of transient objects of the user's choosing, distribute them through a volume of space (including across the sky and over redshift/physical distance) and over a period of time considered by the telescope under consideration, given the exposure history provided. For each transient, a lightcurve is generated using the corresponding exposure times of the frames that contain the transient which, from the limiting magnitudes of the exposure, enables it to identify which transients are formally recovered by the survey. 
