@@ -68,7 +68,7 @@ def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, re
 	fluxes = np.array(fluxes, dtype = float)
 	obj_phase = np.array(obj_phase, dtype = float)
 
-	source = sncosmo.TimeSeriesSource(phase = obj_phase, wave = new_wl, flux = fluxes, name = 'kilonova_2017gfo')
+	source = sncosmo.TimeSeriesSource(phase = obj_phase, wave = new_wl, flux = fluxes, name = 'custom_source')
 
 # 	print(source)
 # 
@@ -77,7 +77,7 @@ def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, re
 # 	
 # 	# model.set_source_peakabsmag(-15.6, 'desr', 'ab')
 # 
-# 	tobs = np.linspace(0., 15., 50)
+# 	tobs = np.linspace(0., 45., 50)
 # 	# mags = model.bandmag('desr', 'ab', tobs)
 # 	mags = model.bandmag('desr', 'ab', tobs)
 # 	# mags = model.flux(5, [4000., 4100., 4200.])
@@ -189,8 +189,15 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 		ebv = dustmap.ebv(ra, dec)
 
 		model.update({'z': z, 't0': t0, 'mwebv': ebv})
-	
-		model.set_source_peakabsmag(source_info['peak magnitude'], filters_in_use[0], 'ab')
+		
+		try:
+		
+			model.set_source_peakabsmag(source_info['peak magnitude'], filters_in_use[0], 'ab')
+			
+		except:
+			
+			registerBandpasses(lightcurve_settings)
+			model.set_source_peakabsmag(source_info['peak magnitude'], filters_in_use[0], 'ab')
 		
 		partial_query_output = collectTemporalOverlap(query_output, t0, source_info['duration'], column_headings)
 		partial_query_output = collectFootprintOverlap(partial_query_output, ra, dec, lightcurve_settings)

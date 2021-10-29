@@ -27,3 +27,8 @@ Kilonova:
     source: 'kilonova_2017gfo'
     duration: 10.
     peak magnitude: -16.0
+
+FBOT:
+    source: 'fbot_2018cow'
+    duration: 50.
+    peak magnitude: -19.5

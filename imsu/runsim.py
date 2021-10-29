@@ -28,7 +28,7 @@ def main():
 		
 	
 	# Query database or read previous query from file
-	query_path = os.path.join(output_path, query_settings['query file']) + '.csv'
+	query_path = os.path.join('query_files', query_settings['query file']) + '.csv'
 	
 	if program_settings['Query Database']:
 
@@ -83,11 +83,10 @@ def main():
 			population_settings = pd.read_csv(population_path)
 
 	# Generate lightcurves from population
-	lightcurve_path = os.path.join(output_path, lightcurve_settings['lightcurve file']) + '.csv'
+	lightcurve_path = os.path.join(output_path, lightcurve_settings['lightcurve file']) + '.json'
 	
 	if program_settings['Generate Lightcurves']:
 		
-		lc_generator.registerBandpasses(lightcurve_settings)
 	
 		if lightcurve_settings['population']['transient type'] == 'GRB':
 			
@@ -99,6 +98,13 @@ def main():
 		elif lightcurve_settings['population']['transient type'] == 'Kilonova':
 			
 			source = lc_generator.addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, redshift = 0.00984, min_wl = 3400., max_wl = 22300., npoints = 40000)
+			lc_population = lc_generator.generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, io_settings, source)
+			
+			lc_generator.saveLightcurveData(lightcurve_path, lc_population)
+
+		elif lightcurve_settings['population']['transient type'] == 'FBOT':
+			
+			source = lc_generator.addTimeSeriesSource(obj_name = 'at2018cow', explosion_epoch = 2458284.8, redshift = 0.014145, min_wl = 3400., max_wl = 12000, npoints = 10000)
 			lc_population = lc_generator.generateSNLightcurvePopulation(query_output, population_settings, lightcurve_settings, io_settings, source)
 			
 			lc_generator.saveLightcurveData(lightcurve_path, lc_population)
