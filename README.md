@@ -6,7 +6,7 @@ A note on the naming of this cose: I called it **imsu** as it is short for *imit
 
 ## Basis of operation
 
-The code is divided into a few subroutines that handle its various stages of execution. The only user input is supposed to be through the settings file, `<settings.yaml>`. This documentation will explain in detail how the code runs and how to interpret the results. To give an overview, the code will generate a population of transient objects of the user's choosing, distribute them through a volume of space (including across the sky and over redshift/physical distance) and over a period of time considered by the telescope under consideration, given the exposure history provided. For each transient, a lightcurve is generated using the corresponding exposure times of the frames that contain the transient which, from the limiting magnitudes of the exposure, enables it to identify which transients are formally recovered by the survey. 
+The code is divided into a few subroutines that handle its various stages of execution. The only user input is supposed to be through the settings file, `settings.yaml`. This documentation will explain in detail how the code runs and how to interpret the results. To give an overview, the code will generate a population of transient objects of the user's choosing, distribute them through a volume of space (including across the sky and over redshift/physical distance) and over a period of time considered by the telescope under consideration, given the exposure history provided. For each transient, a lightcurve is generated using the corresponding exposure times of the frames that contain the transient which, from the limiting magnitudes of the exposure, enables it to identify which transients are formally recovered by the survey. 
 
 ## Installation
 
@@ -17,6 +17,7 @@ Unfortunately, I've not packaged this yet such that it can be installed via pip.
 3. `AfterglowPy`, which is used for generating GRB lightcurves. There isn't much documentation for this package, but you can read some example on it [here](https://afterglowpy.readthedocs.io/en/latest/).
 4. `sfdmap`, which is used with `SNCosmo` to apply extinction corrections to generated lightcurves. It is pip installable or can be installed from source [here](https://github.com/kbarbary/sfdmap).
 5. `extinction`, another extinction correction package this time used with `AfterglowPy`. It's also pip installable, but if you want the documentation, look [here](https://extinction.readthedocs.io/en/latest/).
+6. `spectres`, a tool used for rebinning spectra when adding custom time series sources to `SNCosmo`. This can be installed via pip.
 
 With the exception of `sfdmap`, these packages should all work out of the box. `sfdmap` has an additional step in its install of downloading the [Schlegel, Finkbeiner and Davis (1998)](https://ui.adsabs.harvard.edu/abs/1998ApJ...500..525S/abstract) dustmap files themselves. These are then queried during the lightcurve generation for E(B-V) values. The dustmaps are pretty big once untarred and are contained in folder named `sfddata-master`. Remember the path to this folder as you'll need it in a moment.
 
