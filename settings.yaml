@@ -1,0 +1,89 @@
+Program Settings:
+    Query Database: False
+    Generate Transients: False
+    Generate Lightcurves: False
+    Perform Recovery: False
+    Make Plots: True
+
+Query Settings:
+    dbevent: 
+    time observing:
+        survey begin: 2458259.0
+        survey end: 2458671.0
+#    query file: 'QC_all_data_kws_57308_59024_20200624_merged_daves_moving_object_database_data'
+    query file: 'test_query'
+      
+Lightcurve Settings:
+    population:
+        transient type: WDNS
+        number to inject: 5
+        population file: 'test_population_wdns'
+    ellipse geometry:
+        central ra: 150.0
+        central dec: -30.0
+        semi major axis: 10.
+        semi minor axis: 6.
+        rotation angle: 315.
+    depth:
+        min redshift: 0.000
+        max redshift: 0.025
+    telescope properties:
+        filter effective wavelengths:
+#            ATLASc: 5330.0
+#            ATLASo: 6790.0
+            gotoL: 5396.65
+            gotoR: 6405.05
+            gotoG: 5355.32
+            gotoB: 4600.58
+        column headings:
+            time: 'jd'
+            ra: 'ra_c'
+            dec: 'dec_c'
+            limiting mag: 'limmag5'
+            filter: 'filter'
+            filter keys:
+#                - c
+#                - o
+                - L
+                - R
+                - G
+                - B
+        chip width: 3.8
+        chip height: 4.7
+    lightcurve file: 'test_lcs_wdns'
+
+GRB Settings:
+    jetType: 'Gaussian'         # TopHat, Gaussian or PowerLaw
+    specType: 0                 # Basic Synchrotron Spectrum
+    thetaObs: 0.40              # Viewing angle in radians
+    E0: 1.0e53                  # Isotropic-equivalent energy in erg
+    thetaCore: 0.066            # Half-opening angle in radians
+    n0: 0.001995262314968879    # circumburst density in cm^{-3}
+    p: 2.168                    # electron energy distribution index
+    epsilon_e: 0.038018939632   # epsilon_e
+    epsilon_B: 1.0e-4           # epsilon_B
+    xi_N: 1.0                   # Fraction of electrons accelerated
+#    d_L: 1.0e28                 # Luminosity distance in cm
+#    z: 0.009727                 # redshift
+    thetaWing: 0.47             # Wing angle in radians, I presume
+    b: 6                        # Power law slope
+
+Recovery Settings:
+    min detection counts:
+        gotoL: 1
+        gotoR: 1
+        gotoG: 1
+        gotoB: 1
+    min nightly detection counts:
+        gotoL: 1
+        gotoR: 1
+        gotoG: 1
+        gotoB: 1
+
+IO Settings:
+    results directory: 'test_sim'
+    sfdmaps path: 'imsu/sfdmaps/sfddata-master'
+    
+    
+ 
+ 
