@@ -1,4 +1,3 @@
-import gotocat as gc
 import time
 import sys
 import numpy as np
@@ -7,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 def establishConnection(phase = 4):
+	
+	import gotocat as gc
 
 	db_conn = gc.GOTOdb(phase = phase)
 
