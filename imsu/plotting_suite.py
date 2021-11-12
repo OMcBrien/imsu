@@ -85,7 +85,7 @@ def make2DHistogramRecoveredPointings(population_settings, lightcurve_settings):
 	
 		plt.hist2d(df_rec['ras'], df_rec['decs'], bins = [40, 20], cmap = plt.cm.Greens)
 		plt.colorbar()
-		plt.title(flt, ' recovered')
+		plt.title(flt + ' recovered')
 		plt.xlabel('RA, deg.')
 		plt.ylabel('Dec, deg.')
 		plt.xlim([0., 360.])
@@ -96,7 +96,7 @@ def make2DHistogramRecoveredPointings(population_settings, lightcurve_settings):
 	
 		plt.hist2d(df_nrec['ras'], df_nrec['decs'], bins = [40, 20], cmap = plt.cm.Reds)
 		plt.colorbar()
-		plt.title(flt, ' non-recovered')
+		plt.title(flt + ' non-recovered')
 		plt.xlabel('RA, deg.')
 		plt.ylabel('Dec, deg.')
 		plt.xlim([0., 360.])

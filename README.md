@@ -117,3 +117,97 @@ Bear in mind that to produce accurate optical lightcurves, the code has to integ
 The recovery suit is rather simplistic. Because the lightcurve generator is able to flag which transients are not only visible in each exposure but also which are bright enough to be detected, the recovery suite is used to provide constrains on when a survey would formally consider the events recovered. If a given transient is only viewed above the detection limit in one exposures, it might not be pursued for follow-up by the survey. Hence, within the recovery suite, you may specify the total number of detections that must be made in each filter, as well as on how many nights detections must be made in each filter, for a transient even to count toward the efficiency measurement.
 
 Enable the recovery suite under `Program Settings > Perform Recovery` and refer to the `Recovery Settings`. The `min detection counts` lets you specify that minimum number of total detections that must be made in each filter. Please set the filters to the same as under `Lightcurve Settings > telescope properties > filter effective wavelengths`. Likewise, the minimum number of nights an event must be detected on in each filter can be specified under `min nightly detection counts`. If a given transient passes these specified criteria, the lightcurve file is update to reflect that when returning the final efficiency calculation. This efficiency is the ratio of the number of events generated that pass these criteria to the total number of events generated. Please note that a recovery efficiency is provided for each filter specified, allowing you to make comparisons between filters and gauge how useful colour information would be. As such, it's important to used the same filters in the recovery settings as you had specified under `Lightcurve Settings > telescope properties > filter effective wavelengths`.
+
+## Example usage
+
+I have included in the distribution an example exposure file (under `query_files/synth-tiling-120s-100n`) which is a synthetic tiling pattern of GOTO using the L band exclusively. It spans approximately 100 nights observing the whole visible sky with an exposure time of 120 seconds and flat limiting magnitude function. If you test the efficiency simulation code for the standard supernova types using these settings:
+
+```
+Program Settings:
+    Query Database: False
+    Generate Transients: False
+    Generate Lightcurves: True
+    Perform Recovery: True
+    Make Plots: False
+
+Query Settings:
+    dbevent: 
+    time observing:
+        survey begin: 2458259.0
+        survey end: 2458671.0
+    query file: 'synth-tiling-120s-100n'
+      
+Lightcurve Settings:
+    population:
+        transient type: SN II-P
+        number to inject: 1000
+        population file: 'test_population'
+    ellipse geometry:
+        central ra: 150.0
+        central dec: -30.0
+        semi major axis: 10.
+        semi minor axis: 6.
+        rotation angle: 315.
+    depth:
+        min redshift: 0.000
+        max redshift: 0.025
+    telescope properties:
+        filter effective wavelengths:
+            gotoL: 5396.65
+        column headings:
+            time: 'jd'
+            ra: 'ra_c'
+            dec: 'dec_c'
+            limiting mag: 'limmag5'
+            filter: 'filter'
+            filter keys:
+                - L
+        chip width: 3.8
+        chip height: 4.7
+    lightcurve file: 'test_lcs'
+
+GRB Settings:
+    jetType: 'Gaussian'         # TopHat, Gaussian or PowerLaw
+    specType: 0                 # Basic Synchrotron Spectrum
+    thetaObs: 0.40              # Viewing angle in radians
+    E0: 1.0e53                  # Isotropic-equivalent energy in erg
+    thetaCore: 0.066            # Half-opening angle in radians
+    n0: 0.001995262314968879    # circumburst density in cm^{-3}
+    p: 2.168                    # electron energy distribution index
+    epsilon_e: 0.038018939632   # epsilon_e
+    epsilon_B: 1.0e-4           # epsilon_B
+    xi_N: 1.0                   # Fraction of electrons accelerated
+#    d_L: 1.0e28                 # Luminosity distance in cm
+#    z: 0.009727                 # redshift
+    thetaWing: 0.47             # Wing angle in radians, I presume
+    b: 6                        # Power law slope
+
+Recovery Settings:
+    min detection counts:
+        gotoL: 1
+    min nightly detection counts:
+        gotoL: 1
+
+IO Settings:
+    results directory: 'test_sim'
+    sfdmaps path: '/path/to/sfdmaps-master'
+```    
+
+you should recover efficiency values similar to these:
+
+ - `SN Ia` = 19.2 per cent
+ - `SN Ib/c` = 19.1 per cent
+ - `SN II-P` = 18.8 per cent
+ - `SN II-L` = 17.6 per cent
+ - `SN IIn` = 18.6 per cent
+ 
+Now, 'should' is the operative word here as the distribution of events over RA, Dec, distance and explosion epoch does involve a certain amount of randomness, so don't be surprised to see small variations from these values if trying yourself. Note that the maximum redshift an object can be placed is `z = 0.025`, which is roughly 110 Mpc, depending on your cosmology. Most of these simulations can generate the requested 1000 lightcurves in 20 seconds or less.
+
+While measuring these efficiency values, I also have a clean list of dependencies from my install. You can find this under `requirements.txt`. It's simply the output of `pip freeze`, in the event you are having issues with dependency versions.
+
+## Comments, queries, questions and suggestions
+
+If you spot any bugs, want a custom source added or have any questions, feel free to [contact me](mailto:ormcbrien@gmail.com?subject=[GitHub]%20imsu).
+ 
+ 
+
