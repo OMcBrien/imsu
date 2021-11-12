@@ -8,7 +8,7 @@ import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import population_generator
+from imsu import population_generator
 import extinction
 
 def mJy2ABmag(F_nu, wl):
@@ -25,7 +25,7 @@ def registerBandpasses(lightcurve_settings):
 		
 		print('Registering ', flt)
 
-		flt_data = np.loadtxt('bandpasses/%s' %str(flt))
+		flt_data = np.loadtxt('imsu/bandpasses/%s' %str(flt))
 		flt_band = sncosmo.Bandpass(flt_data[:,0], flt_data[:,1], name = str(flt))
 		sncosmo.register(flt_band)
 
@@ -34,7 +34,7 @@ def addTimeSeriesSource(obj_name = 'at2017gfo', explosion_epoch = 2457983.48, re
 
 	import spectres
 
-	path_to_spectra = 'custom_sources/%s/source_spectra/' %obj_name
+	path_to_spectra = 'imsu/custom_sources/%s/source_spectra/' %obj_name
 
 	df = pd.read_csv(path_to_spectra + '%s_metadata.csv' %obj_name)
 
@@ -151,7 +151,7 @@ def generateSNLightcurvePopulation(query_output, population_settings, lightcurve
 
 	transient_type = lightcurve_settings['population']['transient type']
 	
-	with open('sources.yaml', 'r') as stream:
+	with open('imsu/sources.yaml', 'r') as stream:
 		loader = yaml.SafeLoader
 		sources = yaml.load(stream, Loader = loader)
 	
